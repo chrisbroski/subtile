@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<title>{{pageName}} - API - {{homeName}}</title>
+{{{head}}}
+
+<body>
+{{{header}}}
+
+<article>
+<h1>{{pageName}}</h1>
+
+<h5><a href="{{API_DIR}}/">Home</a> &gt; {{pageName}}</h5>
+
+{{#hasError}}
+<ul class="msg error">
+{{#error}}
+<li>{{.}}</li>
+{{/error}}
+</ul>
+{{/hasError}}
+
+{{#hasMsg}}
+<ul class="msg">
+{{#msg}}
+<li>{{.}}</li>
+{{/msg}}
+{{#link}}
+<li><a href="{{href}}">{{text}}</a></li>
+{{/link}}
+</ul>
+{{/hasMsg}}
+
+{{#loggedIn}}
+<section>
+<form method="POST" action="{{API_DIR}}/{{resourceName}}/">
+
+<p><label>Name</label>*<br>
+    <input type="text" name="name" autofocus="autofocus" required="required" value="{{formData.name}}">
+
+<p><label>Made Popular By</label> (If not an original song)*<br>
+    <input type="text" name="artist" value="{{formData.artist}}">
+
+<p><label>Duration</label><br>
+    <input type="number" name="durationM" min="0" max="120" step="1" value="0" value="{{formData.durationM}}"> minutes
+    <input type="number" name="durationS" min="0" max="60" step="1" value="0" value="{{formData.durationS}}"> seconds
+
+<p><label>Description<br><textarea name="desc">{{desc}}</textarea></p>
+
+<p><label>Genre</label><br>
+    <select name="genre1">
+        <option value="">Select Main Genre</option>
+        {{#genres}}
+        <option value="{{name}}"{{{selected}}}>{{name}}</option>{{/genres}}
+    </select>
+
+<p><label>Sub-genre</label><br><input type="text" name="genre2" value="{{formData.genre2}}">
+<p><label>Sub-genre</label><br><input type="text" name="genre3" value="{{formData.genre3}}">
+
+<p><label>Story<br><textarea name="story">{{formData.story}}</textarea></p>
+
+<h3>Audio</h3>
+
+<p><label>Spotify</label><br>
+    <input type="url" name="spotify" value="{{formData.spotify}}">
+
+<p><label>Apple Music</label><br>
+    <input type="url" name="apple" value="{{formData.apple}}">
+
+<p><label>Amazon Music</label><br>
+    <input type="url" name="amazon" value="{{formData.amazon}}">
+
+<p><label>CD Baby</label><br>
+    <input type="url" name="cdbaby" value="{{formData.cdbaby}}">
+
+<p><label>YouTube</label><br>
+    <input type="url" name="youtube" value="{{formData.youtube}}">
+
+<h3>Video</h3>
+
+<p><label>YouTube</label><br>
+<input type="url" name="video-youtube" value="{{formData.video-youtube}}">
+
+<p><label>Facebook</label><br>
+<input type="url" name="video-fb" value="{{formData.video-fb}}">
+
+<p><label>Lyrics<br><textarea name="lyrics">{{formData.lyrics}}</textarea></p>
+
+<p><button>Create {{resourceName}}</button>
+</form>
+</section>
+{{/loggedIn}}
+
+<section class="list">
+{{#song}}
+<p><a href="{{API_DIR}}/{{resourceName}}/{{id}}">{{name}}</a></p>
+{{/song}}
+</section>
+
+</article>

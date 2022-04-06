@@ -1,0 +1,16 @@
+{
+  "name": "subtile.js",
+  "version": "1.0.0",
+  "description": "Starting template for a lean node.js http application",
+  "main": "index.js",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "mustache": "^4.2.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chris Broski",
+  "license": "ISC"
+}

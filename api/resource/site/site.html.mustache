@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<title>{{pageName}} - API - {{homeName}}</title>
+{{{head}}}
+
+<body id="site-page">
+{{{header}}}
+
+<article>
+<h1>{{resourceName}}</h1>
+
+<h5><a href="{{API_DIR}}/">Home</a> &gt; {{pageName}}</h5>
+
+{{#hasError}}
+<ul class="msg error">
+{{#error}}
+<li>{{.}}</li>
+{{/error}}
+</ul>
+{{/hasError}}
+
+{{#hasMsg}}
+<ul class="msg">
+{{#msg}}
+<li>{{.}}</li>
+{{/msg}}
+{{#link}}
+<li><a href="{{href}}">{{text}}</a></li>
+{{/link}}
+</ul>
+{{/hasMsg}}
+
+<section>
+<h2>Styles</h2>
+{{^loggedIn}}
+<p>Primary color: {{color1}}</p>
+<p>Secondary color: {{color2}}</p>
+
+<h3>Fonts</h3>
+<p>Header font: {{header-font}}</p>
+<p>Header font-weight: {{header-font-weight}}</p>
+<p>Header generic font: {{header-font-default}}</p>
+<p>Body font: {{body-font}}</p>
+<p>Body generic font: {{body-font-default}}</p>
+</section>
+{{/loggedIn}}
+
+{{#loggedIn}}
+<form method="POST" action="{{API_DIR}}/site" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="method" value="PUT">
+<p><label>Primary Color</label><br>
+    <input type="color" name="color1" value="{{color1}}">
+<p><label>Secondary Color</label><br>
+    <input type="color" name="color2" value="{{color2}}">
+
+<p><label>Header Font</label><br>
+    <input type="text" name="header-font" value="{{header-font}}"></p>
+<p><label>Generic Font Family</label><br><select name="header-font-default">
+    <option value="sans-serif"{{{header-sans-serif-selected}}}>Sans-serif</option>
+    <option value="serif"{{{header-serif-selected}}}>Serif</option>
+    <option value="monospace"{{{header-monospace-selected}}}>Monospace</option>
+    <option value="cursive"{{{header-cursive-selected}}}>Cursive</option>
+    <option value="fantasy"{{{header-fantasy-selected}}}>Fantasy</option>
+</select>
+</p>
+<p><label>Normal <input type="radio" name="header-font-weight" value="normal"{{{header-font-normal}}}></label>
+<label>Bold <input type="radio" name="header-font-weight" value="bold"{{{header-font-bold}}}></label>
+</p>
+
+<p><label>Body Font</label><br>
+    <input type="text" name="body-font" value="{{body-font}}"><br>
+<p><label>Generic Font Family</label><br><select name="body-font-default">
+    <option value="sans-serif"{{{body-sans-serif-selected}}}>Sans-serif</option>
+    <option value="serif"{{{body-serif-selected}}}>Serif</option>
+    <option value="monospace"{{{body-monospace-selected}}}>Monospace</option>
+    <option value="cursive"{{{body-cursive-selected}}}>Cursive</option>
+    <option value="fantasy"{{{body-fantasy-selected}}}>Fantasy</option>
+</select>
+
+<p><button>Update Site Information</button>
+</form>
+{{/loggedIn}}
+</section>
+
+</article>

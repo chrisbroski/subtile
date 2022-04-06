@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<title>{{resourceName}} - {{homeName}}</title>
+{{{head}}}
+
+<body>
+{{{header}}}
+
+<article>
+<h1>{{title}}</h1>
+
+<section>
+{{#id}}
+<p>id: {{id}}</a></p>
+{{/id}}
+
+{{#msg}}
+<p>{{.}}</p>
+{{/msg}}
+
+{{#link}}
+<p><a href="{{link}}">{{link}}</a></p>
+{{/link}}
+
+{{#back}}
+<p><a href="{{back}}">Back</a></p>
+{{/back}}
+
+{{#desc}}
+<pre>{{desc}}</pre>
+{{/desc}}
+</section>
+</article>

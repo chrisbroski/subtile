@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<title>{{pageName}} - {{resourceNameCap}} - API - {{homeName}}</title>
+{{{head}}}
+
+<body id="user-page">
+{{{header}}}
+
+<article>
+<h1>{{pageName}}</h1>
+
+<h5><a href="{{API_DIR}}/">Home</a> &gt; {{pageName}}</h5>
+
+{{#hasError}}
+<ul class="msg error">
+{{#error}}
+<li>{{.}}</li>
+{{/error}}
+</ul>
+{{/hasError}}
+
+{{#hasMsg}}
+<ul class="msg">
+{{#msg}}
+<li>{{.}}</li>
+{{/msg}}
+{{#link}}
+<li><a href="{{href}}">{{text}}</a></li>
+{{/link}}
+</ul>
+{{/hasMsg}}
+
+{{#loggedIn}}
+<section>
+<form method="POST" action="{{API_DIR}}/user/" enctype="application/x-www-form-urlencoded">
+<p><label>Email</label>*<br>
+<input type="text" name="email" required="required" autofocus="autofocus">
+<p><label>First Name</label><br>
+    <input type="text" name="givenName">
+<p><label>Surname</label><br>
+    <input type="text" name="surname">
+<p><label>City</label><br>
+    <input type="text" name="city">
+<p><label>State</label><br>
+    <input type="text" name="state">
+<p><label>Country</label><br>
+    <select name="country">
+        <option value="">Select Country</option>
+        {{#countries}}
+        <option value="{{code}}"{{{selected}}}>{{name}}</option>{{/countries}}
+    </select>
+
+<p>
+    <label><input type="checkbox" value="Y" name="admin"> Admin</label>
+</p>
+
+<p><label>Bio</label><br><textarea name="bio"></textarea>
+
+<p><button>Create New User</button>
+</form>
+</section>
+{{/loggedIn}}
+
+<section class="list">
+{{#user}}
+<p><a href="{{API_DIR}}/user/{{id}}">{{userName}}</a>
+{{#token}}
+(<a href="{{API_DIR}}/password/{{id}}?token={{token}}">Reset URL</a>)
+{{/token}}
+{{/user}}
+</section>
+
+</article>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<title>{{pageName}} - {{resourceNameCap}} - API - {{homeName}}</title>
+{{{head}}}
+
+<body>
+{{{header}}}
+
+<article>
+<h1>{{pageName}}</h1>
+
+<h5><a href="{{API_DIR}}/">Home</a> &gt; <a href="{{API_DIR}}/{{resourceName}}">{{resourceDisplayName}}</a> &gt; {{pageName}}</h5>
+
+{{#hasError}}
+<ul class="msg error">
+{{#error}}
+<li>{{.}}</li>
+{{/error}}
+</ul>
+{{/hasError}}
+
+{{#hasMsg}}
+<ul class="msg">
+{{#msg}}
+<li>{{.}}</li>
+{{/msg}}
+{{#link}}
+<li><a href="{{href}}">{{text}}</a></li>
+{{/link}}
+</ul>
+{{/hasMsg}}
+
+{{#loggedIn}}
+<section>
+<form method="POST" action="{{API_DIR}}/user/{{id}}" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="method" value="PUT">
+
+<p><label>Email</label>*<br>
+<input type="text" name="email" value="{{email}}" required="required" autofocus="autofocus">
+<p><label>First Name</label><br>
+    <input type="text" name="givenName" value="{{givenName}}">
+<p><label>Last Name</label><br>
+    <input type="text" name="surname" value="{{surname}}">
+<p><label>City</label><br>
+    <input type="text" name="city" value="{{city}}">
+<p><label>State</label><br>
+    <input type="text" name="state" value="{{state}}">
+<p><label>Country</label><br>
+    <select name="country">
+        <option value="">Select Country</option>
+        {{#countries}}
+        <option value="{{code}}"{{{selected}}}>{{name}}</option>{{/countries}}
+    </select>
+
+<p>
+    <label><input type="checkbox" value="Y"{{{adminChecked}}} name="admin"> Admin</label>
+</p>
+
+<p><label>Bio<br><textarea name="bio">{{bio}}</textarea></p>
+
+<p><button>Update User Data</button>
+</form>
+</section>
+
+{{#isOwnUser}}
+<section>
+<h3>Change Password</h3>
+<form method="POST" action="{{API_DIR}}/password/{{id}}">
+<input type="hidden" name="method" value="PUT">
+<p><label>Current Password</label><br>
+    <input type="password" id="password" name="password" required="required">
+<p><label>New Password</label><br>
+    <input type="password" id="passwordNew" name="passwordNew" required="required">
+<p><label>Confirm New Password</label><br>
+    <input type="password" name="passwordConfirm" id="passwordConfirm" required="required">
+<p><button>Change Password</button></p>
+</form>
+</section>
+{{/isOwnUser}}
+
+{{^isOwnUser}}
+<section>
+{{#isMod}}
+{{^token}}
+<form method="POST" action="{{API_DIR}}/password/{{id}}" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="method" value="DELETE">
+<p><button>Reset Password</button>
+</form>
+{{/token}}
+{{#token}}
+<p><a href="{{API_DIR}}/password/{{id}}?token={{token}}">Password reset URL</a>
+{{/token}}
+{{/isMod}}
+</section>
+{{/isOwnUser}}
+
+<section>
+<p><a class="button" href="{{API_DIR}}/delete?resource={{resourceName}}&id={{id}}">Delete {{resourceName}}</a></p>
+</section>
+{{/loggedIn}}
+
+{{^loggedIn}}
+<section>
+<h2>{{givenName}} {{surname}}</h2>
+<p>{{city}}, {{state}}, {{country}}</p>
+<p>Admin {{admin}}</p>
+<p><pre>{{desc}}</pre></p>
+<p><pre>{{bio}}</pre></p>
+</section>
+{{/loggedIn}}
+</article>

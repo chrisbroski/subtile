@@ -1,0 +1,27 @@
+<header>
+    <h2><a href="{{API_DIR}}/">Home</a></h2>
+    <p>
+        <a href="{{API_DIR}}/site">Site</a>
+        <a href="{{API_DIR}}/band">Band</a>
+        <a href="{{API_DIR}}/gig/">Gigs</a>
+        <a href="{{API_DIR}}/venue/">Venues</a>
+        <a href="{{API_DIR}}/song/">Songs</a>
+        <a href="{{API_DIR}}/release/">Releases</a>
+        <a href="{{API_DIR}}/announcement/">Announcements</a>
+        <a href="{{API_DIR}}/user/">Members</a>
+    </p>
+    <p>
+    {{#loggedIn}}
+        <a href="{{API_DIR}}/logout">Logout</a>
+    {{/loggedIn}}
+    {{^loggedIn}}
+        <form method="POST" action="{{API_DIR}}/login">
+        <p><label>Email</label><br>
+            <input type="email" name="email" type="email" id="email">
+        <p><label>Password</label><br>
+            <input type="password" id="password" name="password">
+        <p><button>Log In</button>
+        </form>
+    {{/loggedIn}}
+    </p>
+</header>

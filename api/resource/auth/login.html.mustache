@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<title>Log In - {{homeName}}</title>
+{{{head}}}
+
+<body>
+{{{header}}}
+
+<article>
+<h1>Log In</h1>
+
+<section>
+<ul>
+{{#msg}}
+<li>{{.}}</li>
+{{/msg}}
+</ul>
+<form method="POST" action="{{API_DIR}}/login">
+<p><label>Email</label><br>
+    <input type="email" name="email" id="email" value="{{email}}"{{emailAutofocus}}>
+<p><label>Password</label><br>
+    <input type="password" id="password" name="password"{{passwordAutofocus}}>
+<p><button>Log In</button>
+</form>
+</section>
+
+</article>

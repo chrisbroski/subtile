@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<title>Initial Setup</title>
+{{{head}}}
+
+<body id="start">
+
+<article>
+<h1>Initial Setup</h1>
+
+{{#hasError}}
+<ul class="msg error">
+{{#error}}
+<li>{{.}}</li>
+{{/error}}
+</ul>
+{{/hasError}}
+
+{{#hasMsg}}
+<ul class="msg">
+{{#msg}}
+<li>{{.}}</li>
+{{/msg}}
+{{#link}}
+<li><a href="{{href}}">{{text}}</a></li>
+{{/link}}
+</ul>
+{{/hasMsg}}
+
+<section>
+<form method="POST" action="{{API_DIR}}/start" enctype="application/x-www-form-urlencoded">
+<p><label>Application Name</label>*<br>
+    <input type="text" name="name" value="{{name}}" required="required">
+<p><label>Primary Email</label>*<br>
+    <input type="email" name="email" value="{{email}}" required="required">
+<p><label>Password</label>*<br>
+    <input type="password" name="password" required="required">
+<p><label>Confirm Password</label>*<br>
+    <input type="password" name="confirmPassword" required="required">
+
+<p><button>Complete Initial Setup</button>
+</form>
+
+</section>
+
+</article>
