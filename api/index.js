@@ -1,29 +1,24 @@
 // Standard libs
 const http = require('http');
-const fs = require("fs");
-const util = require('util');
+const fs = require("fs").promises;
+// const util = require('util');
 const url = require('url');
 
-const readFile = util.promisify(fs.readFile);
+// const readFile = util.promisify(fs.readFile);
 
 // npm modules
-require('dotenv').config({path: `${__dirname}/.env`});
+require('dotenv').config();
 
-// Configuration
-const PORT = process.env.PORT || 29170;
-const API_DIR = process.env.API_DIR || "/api";
-const FAIL_UNTIL_LOCKOUT = process.env.FAIL_UNTIL_LOCKOUT || 10;
-const LOCKOUT_DURATION_SECONDS = process.env.LOCKOUT_DURATION_SECONDS || 600000;
-const SESSION_TIMEOUT_SECONDS = process.env.SESSION_TIMEOUT_SECONDS || 31622400;
+// Configuration defaults
+process.env.PORT = process.env.PORT || 29170;
+process.env.SUBDIR = process.env.SUBDIR || "/api";
 
 // Custom libs
 const main = require('./inc/main.js');
 const endure = require('./inc/endure.js');
 
 // Resources
-const auth = require('./resource/auth/auth.js').init(
-    FAIL_UNTIL_LOCKOUT, LOCKOUT_DURATION_SECONDS, SESSION_TIMEOUT_SECONDS
-);
+const auth = require('./resource/auth/auth.js');
 const site = require('./resource/site/site.js');
 const user = require('./resource/user/user.js');
 const example = require('./resource/example/example.js');
@@ -31,7 +26,6 @@ const example = require('./resource/example/example.js');
 // Application state
 const ASSET = {};
 const TEMPLATE = {};
-var db;
 
 function removeQs(fullUrl) {
     if (!fullUrl) {
@@ -43,37 +37,20 @@ function removeQs(fullUrl) {
     return fullUrl.slice(0, fullUrl.indexOf('?'));
 }
 
-function extractResource(pathname) {
-    var resource = "";
-    var reResource;
-    var val;
+function regexExtract(pattern, source) {
+    var value = "";
+    var reId = new RegExp(pattern, "i");
+    var result;
 
-    if (pathname.slice(-1) !== "/") {
-        pathname = pathname + "/";
-    }
-    reResource = new RegExp("^\/([^\/]+)[\/]", "i");
-    val = reResource.exec(pathname);
-    if (val) {
-        resource = val[1];
-    }
-    return decodeURIComponent(resource);
-}
-
-function extractId(pathname, resource) {
-    var id = "";
-    var reId;
-    var val;
-
-    if (pathname.slice(-1) !== "/") {
-        pathname = pathname + "/";
+    if (source.slice(-1) !== "/") {
+        source = source + "/";
     }
 
-    reId = new RegExp('^\/' + resource + '\/([^\/]+)', "i");
-    val = reId.exec(pathname);
-    if (val) {
-        id = val[1];
+    result = reId.exec(source);
+    if (result) {
+        value = result[1];
     }
-    return decodeURIComponent(id);
+    return decodeURIComponent(value);
 }
 
 function extractFileType(path) {
@@ -86,21 +63,22 @@ function extractFileType(path) {
         return "";
     }
     return path.slice(lastDot + 1);
+    // from last slash to either end, ?, or #
 }
 
-function getPath(pathname, API_DIR) {
+function getPath(pathname) {
     var path;
     var qs = main.parseQs(pathname, true);
     var raw = pathname;
     pathname = removeQs(pathname);
-    path = pathname.slice(API_DIR.length);
+    path = pathname.slice(process.env.SUBDIR.length);
     if (!path) {
         return {"pathname": pathname, id: "", resource: ""};
     }
 
-    var resource = extractResource(path);
+    var resource = regexExtract("^\/([^\/]+)[\/]", path);;
     return {
-        "id": extractId(path, resource),
+        "id": regexExtract('^\/' + resource + '\/([^\/]+)', path),
         "pathname": decodeURI(pathname),
         "resource": resource,
         "path": path,
@@ -121,21 +99,21 @@ function authenticate(req, rsp, path) {
 
     cookies = main.parseCookie(req.headers.cookie);
     if (!cookies.user) {
-        return auth.fail(req, rsp, 'Not logged in', db, API_DIR);
+        return auth.fail(req, rsp, 'Not logged in', endure.db, process.env.SUBDIR);
     }
     userid = cookies.user;
 
-    userData = db.user[userid];
+    userData = endure.db.user[userid];
     if (!userData) {
-        return auth.fail(req, rsp, 'User id not found', db, API_DIR);
+        return auth.fail(req, rsp, 'User id not found', endure.db, process.env.SUBDIR);
     }
 
     if (!userData.hash) {
-        return auth.fail(req, rsp, 'User not able to log in. Please contact your moderator.', db, API_DIR);
+        return auth.fail(req, rsp, 'User not able to log in. Please contact your moderator.', endure.db, process.env.SUBDIR);
     }
 
     if (main.hash(userData.password + userid, userData.salt) !== cookies.token) {
-        return auth.fail(req, rsp, 'Invalid token', db, API_DIR);
+        return auth.fail(req, rsp, 'Invalid token', endure.db, process.env.SUBDIR);
     }
 
     return true;
@@ -152,15 +130,15 @@ function isFileForm(req) {
 
 function homePage(req, rsp) {
     rsp.writeHead(200, {'Content-Type': 'text/html'});
-    rsp.end(main.renderPage(req, TEMPLATE.home, db.band, db, API_DIR));
+    rsp.end(main.renderPage(req, TEMPLATE.home, endure.db.band, endure.db));
     return;
 }
 
 function getDelete(req, rsp) {
     var searchParams = url.parse(req.url, true).query;
 
-    if (!db[searchParams.resource][searchParams.id]) {
-        return main.notFound(rsp, req.url, 'GET', req, db, API_DIR);
+    if (!endure.db[searchParams.resource][searchParams.id]) {
+        return main.notFound(rsp, req.url, 'GET', req, endure.db);
     }
 
     var deleteData = {
@@ -169,20 +147,20 @@ function getDelete(req, rsp) {
         "back": req.headers.referer
     };
     rsp.writeHead(200, {'Content-Type': 'text/html'});
-    rsp.end(main.renderPage(req, TEMPLATE.delete, deleteData, db, API_DIR));
+    rsp.end(main.renderPage(req, TEMPLATE.delete, deleteData, endure.db));
 }
 
 function rspPost(req, rsp, path, body) {
     if (path.path === '/login') {
-        return auth.login(req, rsp, body, db, API_DIR);
+        return auth.login(req, rsp, body, endure.db, process.env.SUBDIR);
     }
 
     if (path.resource === "password") {
-        return auth.set(req, rsp, path.id, body, db, endure.save, API_DIR);
+        return auth.set(req, rsp, path.id, body, endure.db, endure.save);
     }
 
     if (path.resource === 'example') {
-        return example.create(req, rsp, body, db, endure.save, API_DIR);
+        return example.create(req, rsp, body, endure.db, endure.save, process.env.SUBDIR);
     }
 
     if (path.resource === 'user') {
@@ -194,7 +172,7 @@ function rspPost(req, rsp, path, body) {
         return site.setup(req, rsp, body);
     }
 
-    return main.notFound(rsp, req.url, 'POST', req, db, API_DIR);
+    return main.notFound(rsp, req.url, 'POST', req, endure.db);
 }
 
 function rspPut(req, rsp, path, body) {
@@ -207,17 +185,17 @@ function rspPut(req, rsp, path, body) {
     }
 
     if (path.resource === 'example') {
-        return example.update(req, rsp, path.id, body, db, endure.save, API_DIR);
+        return example.update(req, rsp, path.id, body, endure.db, endure.save, process.env.SUBDIR);
     }
 
     if (path.resource === 'password') {
         if (path.id) {
-            return auth.update(req, rsp, path.id, body, db, endure.save, API_DIR);
+            return auth.update(req, rsp, path.id, body, endure.db, endure.save, process.env.SUBDIR);
         }
         return;
     }
 
-    return main.notFound(rsp, req.url, 'PUT', req, db, API_DIR);
+    return main.notFound(rsp, req.url, 'PUT', req, endure.db);
 }
 
 function rspDelete(req, rsp, path) {
@@ -226,14 +204,14 @@ function rspDelete(req, rsp, path) {
     }
 
     if (path.resource === 'example') {
-        return example.remove(req, rsp, path.id, db, endure.save, API_DIR);
+        return example.remove(req, rsp, path.id, endure.db, endure.save, process.env.SUBDIR);
     }
 
     if (path.resource === `password`) {
-        return auth.reset(req, rsp, path.id, db, endure.save, API_DIR);
+        return auth.reset(req, rsp, path.id, endure.db, endure.save, process.env.SUBDIR);
     }
 
-    return main.notFound(rsp, req.url, 'DELETE', req, db, API_DIR);
+    return main.notFound(rsp, req.url, 'DELETE', req, endure.db);
 }
 
 function rspGet(req, rsp, path) {
@@ -263,21 +241,21 @@ function rspGet(req, rsp, path) {
         return;
     }
     if (path.resource === 'delete') {
-        return getDelete(req, rsp, db, API_DIR);
+        return getDelete(req, rsp, endure.db, process.env.SUBDIR);
     }
 
     // authentication
     if (path.path === '/login') {
-        return auth.get(req, rsp, db, API_DIR);
+        return auth.get(req, rsp, endure.db, process.env.SUBDIR);
     }
     if (path.path === '/') {
         return homePage(req, rsp);
     }
     if (path.path === '/logout') {
-        return auth.logout(req, rsp, db, API_DIR);
+        return auth.logout(req, rsp, endure.db);
     }
     if (path.resource === "password") {
-        return auth.getPassword(req, rsp, path.id, db, API_DIR);
+        return auth.getPassword(req, rsp, path.id, endure.db, process.env.SUBDIR);
     }
 
     // Add resources here
@@ -288,10 +266,10 @@ function rspGet(req, rsp, path) {
         return user.get(req, rsp, path.id);
     }
     if (path.resource === 'example') {
-        return example.get(req, rsp, path.id, db, API_DIR);
+        return example.get(req, rsp, path.id, endure.db, process.env.SUBDIR);
     }
 
-    return main.notFound(rsp, path.pathname, 'GET', req, db, API_DIR);
+    return main.notFound(rsp, path.pathname, 'GET', req, endure.db);
 }
 
 function getMethod(req, body) {
@@ -341,7 +319,7 @@ function allowedBeforeSetup(method, path) {
 function routeMethods(req, rsp, body) {
     var parsedBody = parseBody(req, body);
     var method = getMethod(req, parsedBody);
-    var path = getPath(req.url, API_DIR);
+    var path = getPath(req.url);
 
     // To trigger a 500 for testing:
     // if (req.method !== 'OPTIONS') {
@@ -361,7 +339,7 @@ function routeMethods(req, rsp, body) {
     }
 
     // redirect for initial setup
-    if (allowedBeforeSetup(method, path) && Object.keys(db.user) < 1) {
+    if (allowedBeforeSetup(method, path) && endure.db.user && Object.keys(endure.db.user) < 1) {
         return site.start(req, rsp);
     }
 
@@ -401,7 +379,7 @@ function collectReqBody(req, rsp) {
 function init() {
     process.stdin.resume();
     process.on('SIGINT', function () {
-        if (db) {
+        if (endure.db) {
             console.log('Saving data...');
             endure.save(true);
         }
@@ -411,21 +389,21 @@ function init() {
 }
 
 async function loadData() {
-    db = await endure.load(`${__dirname}/../data`, 10000, '{"user": {}, "site": {}}');
-    site.init(endure, API_DIR);
-    user.init(endure, API_DIR);
+    await endure.load(`${__dirname}/../data`, '{"user": {}, "site": {}}');
+    site.init(endure);
+    user.init(endure);
 
-    ASSET.favicon = await readFile(`${__dirname}/inc/favicon.png`);
-    ASSET.mainCss = await readFile(`${__dirname}/inc/main.css`, 'utf8');
-    ASSET.ajaxTool = await readFile(`${__dirname}/ajax-tool.html`, 'utf8');
+    ASSET.favicon = await fs.readFile(`${__dirname}/inc/favicon.png`);
+    ASSET.mainCss = await fs.readFile(`${__dirname}/inc/main.css`, 'utf8');
+    ASSET.ajaxTool = await fs.readFile(`${__dirname}/ajax-tool.html`, 'utf8');
 
     // TEMPLATE.home = await readFile(`${__dirname}/index.html.mustache`, 'utf8');
-    TEMPLATE.delete = await readFile(`${__dirname}/inc/delete.html.mustache`, 'utf8');
+    TEMPLATE.delete = await fs.readFile(`${__dirname}/inc/delete.html.mustache`, 'utf8');
 }
 
 function startHTTP() {
-    http.createServer(collectReqBody).listen(PORT, function () {
-        console.log(`Server started on http://0.0.0.0:${PORT}${API_DIR}`);
+    http.createServer(collectReqBody).listen(process.env.PORT, function () {
+        console.log(`Server started on http://0.0.0.0:${process.env.PORT}${process.env.SUBDIR}`);
     });
 }
 

@@ -1,9 +1,9 @@
-const fs = require("fs");
-const util = require('util');
+const fs = require("fs").promises;
+// const util = require('util');
 const crypto = require("crypto");
-const readFile = util.promisify(fs.readFile);
-const fileStat = util.promisify(fs.stat);
-this.readFile = readFile;
+// const readFile = util.promisify(fs.readFile);
+// const fileStat = util.promisify(fs.stat);
+// this.readFile = readFile;
 
 const mustache = require("mustache");
 require('dotenv').config({path: `${__dirname}/.env`});
@@ -145,18 +145,18 @@ function createResource(formData, db, save, resourceName, updateResource) {
 }
 this.createResource = createResource;
 
-function responseData(id, resourceName, db, action, API_DIR, msg) {
+function responseData(id, resourceName, db, action, msg) {
     var responseJson = {
         "id": id
     };
     if (resourceName && id) {
         responseJson.data = db[resourceName][id];
-        responseJson.link = `${API_DIR}/${resourceName}/${id}`;
+        responseJson.link = `${process.env.SUBDIR}/${resourceName}/${id}`;
         responseJson.title = `${action} ${toTitleCase(resourceName)}`;
     }
 
     if (action === "Deleted" && resourceName) {
-        responseJson.link = `${API_DIR}/${resourceName}/`;
+        responseJson.link = `${process.env.SUBDIR}/${resourceName}/`;
     }
 
     if (msg && msg.length > 0) {
@@ -178,29 +178,7 @@ function isMod(req, db) {
 }
 this.isMod = isMod;
 
-function invalidMsg(rsp, msg, req, db, API_DIR) {
-    if (!msg.length) {
-        return false;
-    }
-
-    if (req.headers.accept === "application/json") {
-        rsp.writeHead(400, {'Content-Type': 'application/json'});
-        rsp.end(JSON.stringify(msg));
-        return true;
-    }
-
-    // this should go back to its own page with messages
-    rsp.writeHead(400, {'Content-Type': 'text/html'});
-    rsp.end(renderPage(req, null, {
-        "resourceName": "400 Bad Request",
-        "title": "Invalid Request (400)",
-        "msg": msg
-    }, db, API_DIR));
-    return true;
-}
-this.invalidMsg = invalidMsg;
-
-function notFound(rsp, url, verb, req, db, API_DIR) {
+function notFound(rsp, url, verb, req, db) {
     if (req.headers.accept === "application/json") {
         rsp.writeHead(404, {'Content-Type': 'application/json'});
         rsp.end(JSON.stringify({
@@ -214,7 +192,7 @@ function notFound(rsp, url, verb, req, db, API_DIR) {
         "resourceName": "404 Not Found",
         "title": "Not Found (404)",
         "msg": [`Invalid ${verb} request ${url}`]
-    }, db, API_DIR));
+    }, db));
     return;
 }
 this.notFound = notFound;
@@ -234,7 +212,7 @@ function getUserIdByEmail(email, users) {
 }
 this.getUserIdByEmail = getUserIdByEmail;
 
-function renderPage(req, pageTemplate, d, db, API_DIR) {
+function renderPage(req, pageTemplate, d, db) {
     var userData = getAuthUserData(req, db.user);
     var loggedIn = true;
     var resourceName = "";
@@ -254,12 +232,12 @@ function renderPage(req, pageTemplate, d, db, API_DIR) {
         "site": db.site,
         "server": req.headers.host,
         "loggedIn": loggedIn,
-        "API_DIR": API_DIR
+        "API_DIR": process.env.SUBDIR
     });
 
     var head = mustache.render(TEMPLATE.head, {
         "cssVersion": cssVer,
-        "API_DIR": API_DIR
+        "API_DIR": process.env.SUBDIR
     });
 
     return mustache.render(pageTemplate, Object.assign({
@@ -270,7 +248,7 @@ function renderPage(req, pageTemplate, d, db, API_DIR) {
         "userid": userData.userid,
         "homeName": db.site.name,
         "resourceNameCap": toTitleCase(resourceName),
-        "API_DIR": API_DIR
+        "API_DIR": process.env.SUBDIR
     }, d));
 }
 this.renderPage = renderPage;
@@ -303,7 +281,7 @@ function getAuthUserData(req, users) {
     if (!userId) {
         return false;
     }
-    if (!users[userId]) {
+    if (!users || !users[userId]) {
         return false;
     }
     // Check auth token
@@ -316,11 +294,11 @@ this.getAuthUserData = getAuthUserData;
 
 var cssVer;
 async function loadData() {
-    TEMPLATE.head = await readFile(`${__dirname}/head.pht.mustache`, 'utf8');
-    TEMPLATE.header = await readFile(`${__dirname}/header.pht.mustache`, 'utf8');
-    TEMPLATE.generic = await readFile(`${__dirname}/generic.html.mustache`, 'utf8');
+    TEMPLATE.head = await fs.readFile(`${__dirname}/head.pht.mustache`, 'utf8');
+    TEMPLATE.header = await fs.readFile(`${__dirname}/header.pht.mustache`, 'utf8');
+    TEMPLATE.generic = await fs.readFile(`${__dirname}/generic.html.mustache`, 'utf8');
 
-    const fileStats = await fileStat(`${__dirname}/main.css`);
+    const fileStats = await fs.stat(`${__dirname}/main.css`);
     cssVer = +fileStats.mtime;
 }
 

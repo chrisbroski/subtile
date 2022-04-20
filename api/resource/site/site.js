@@ -1,10 +1,11 @@
+const fs = require('fs').promises;
+
 // Custom libs
 const main = require('../../inc/main.js');
 
 const resourceName = 'site';
 const template = {};
 var endure;
-var API_DIR;
 
 function single(msg, error) {
     var siteData = endure.db[resourceName] || {};
@@ -123,19 +124,19 @@ this.setup = function (req, rsp, formData) {
             "hasError": true,
             "error": error,
             "formData": formData
-        }, endure.db, API_DIR));
+        }, endure.db));
         return;
     }
 
     initialSetup(formData);
 
-    var returnData = main.responseData("", resourceName, endure.db, "Updated", API_DIR, ["Site setup complete."]);
+    var returnData = main.responseData("", resourceName, endure.db, "Updated", ["Site setup complete."]);
 
     if (req.headers.accept === 'application/json') {
         return main.returnJson(rsp, returnData);
     }
 
-    rsp.writeHead(303, {'Content-Type': 'text/plain', "Location": `${API_DIR}/login`});
+    rsp.writeHead(303, {'Content-Type': 'text/plain', "Location": `${process.env.SUBDIR}/login`});
     rsp.end("Site setup complete.");
 };
 
@@ -143,20 +144,20 @@ this.update = function (req, rsp, formData) {
     var error = isUpdateInvalid(formData);
     if (error.length) {
         rsp.writeHead(400, {'Content-Type': 'text/html'});
-        rsp.end(main.renderPage(req, template.single, single("", error), endure.db, API_DIR));
+        rsp.end(main.renderPage(req, template.single, single("", error), endure.db));
         return;
     }
 
     updateResource(formData);
 
-    var returnData = main.responseData("", resourceName, endure.db, "Updated", API_DIR, ["Band information updated."]);
+    var returnData = main.responseData("", resourceName, endure.db, "Updated", ["Band information updated."]);
 
     if (req.headers.accept === 'application/json') {
         return main.returnJson(rsp, returnData);
     }
 
     rsp.writeHead(200, {'Content-Type': 'text/html'});
-    rsp.end(main.renderPage(req, template.site, single([`${resourceName} updated.`]), endure.db, API_DIR));
+    rsp.end(main.renderPage(req, template.site, single([`${resourceName} updated.`]), endure.db));
 };
 
 function getCustomCSS(site) {
@@ -213,7 +214,7 @@ this.getCss = function (req, rsp, isCss) {
 this.start = function (req, rsp) {
     // rsp.setHeader('Cache-Control', 'max-age=0,no-cache,no-store,post-check=0,pre-check=0');
     rsp.writeHead(200, {'Content-Type': 'text/html'});
-    rsp.end(main.renderPage(req, template.start, {}, endure.db, API_DIR));
+    rsp.end(main.renderPage(req, template.start, {}, endure.db));
 };
 
 this.get = function (req, rsp) {
@@ -222,17 +223,16 @@ this.get = function (req, rsp) {
         return siteData(rsp, db);
     }
     rsp.writeHead(200, {'Content-Type': 'text/html'});
-    rsp.end(main.renderPage(req, template.site, single(), endure.db, API_DIR));
+    rsp.end(main.renderPage(req, template.site, single(), endure.db));
 };
 
-this.init = function (_endure, _API_DIR) {
+this.init = function (_endure) {
     endure = _endure;
-    API_DIR = _API_DIR;
 };
 
 async function loadData() {
-    template.site = await main.readFile(`${__dirname}/${resourceName}.html.mustache`, 'utf8');
-    template.start = await main.readFile(`${__dirname}/start.html.mustache`, 'utf8');
+    template.site = await fs.readFile(`${__dirname}/${resourceName}.html.mustache`, 'utf8');
+    template.start = await fs.readFile(`${__dirname}/start.html.mustache`, 'utf8');
 }
 
 loadData();

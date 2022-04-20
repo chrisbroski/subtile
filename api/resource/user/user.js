@@ -1,9 +1,9 @@
+const fs = require('fs').promises;
 const main = require('../../inc/main.js');
 
 const resourceName = 'user';
 const template = {};
 var endure;
-var API_DIR;
 
 function single(id, req, msg, error) {
     var authUserData = main.getAuthUserData(req, endure.db.user);
@@ -107,7 +107,7 @@ this.create = function (req, rsp, formData) {
             "hasError": true,
             "error": error,
             "formData": formData
-        }, list()), endure.db, API_DIR));
+        }, list()), endure.db));
         // ^ this needs selected values for country
         return;
     }
@@ -116,7 +116,7 @@ this.create = function (req, rsp, formData) {
 
     db[resourceName][id].token = main.makeId(12);
 
-    var returnData = main.responseData(id, resourceName, endure.db, "Created", API_DIR);
+    var returnData = main.responseData(id, resourceName, endure.db, "Created");
 
     if (req.headers.accept === 'application/json') {
         rsp.setHeader("Location", returnData.link);
@@ -126,81 +126,80 @@ this.create = function (req, rsp, formData) {
     rsp.writeHead(201, {'Content-Type': 'text/html'});
     rsp.end(main.renderPage(req, template.list, Object.assign({
         "hasMsg": true,
-        "link": {"text": `Created ${resourceName} id ${id}`, "href": `${API_DIR}/${resourceName}/${id}`}
-    }, list()), endure.db, API_DIR));
+        "link": {"text": `Created ${resourceName} id ${id}`, "href": `${process.env.SUBDIR}/${resourceName}/${id}`}
+    }, list()), endure.db));
 };
 
 this.update = function (req, rsp, id, formData) {
     if (!endure.db[resourceName][id]) {
-        return main.notFound(rsp, req.url, 'PUT', req, endure.db, API_DIR);
+        return main.notFound(rsp, req.url, 'PUT', req, endure.db);
     }
     // validate more fields
     var error = isUpdateInvalid(formData);
     if (error.length) {
         rsp.writeHead(400, {'Content-Type': 'text/html'});
-        rsp.end(main.renderPage(req, template.single, single(id, req, "", error), db, API_DIR));
+        rsp.end(main.renderPage(req, template.single, single(id, req, "", error), endure.db));
         return;
     }
 
     updateResource(id, formData);
-    var returnData = main.responseData(id, resourceName, db, "Updated", API_DIR);
+    var returnData = main.responseData(id, resourceName, endure.db, "Updated");
 
     if (req.headers.accept === 'application/json') {
         return main.returnJson(rsp, returnData);
     }
 
     rsp.writeHead(200, {'Content-Type': 'text/html'});
-    rsp.end(main.renderPage(req, template.single, single(db, id, req, [`${resourceName} id ${id} updated.`]), db, API_DIR));
+    rsp.end(main.renderPage(req, template.single, single(id, req, [`${resourceName} id ${id} updated.`]), endure.db));
 };
 
 this.remove = function (req, rsp, id) {
     var name;
     if (!endure.db[resourceName][id]) {
-        return main.notFound(rsp, req.url, 'DELETE', req, endure.db, API_DIR);
+        return main.notFound(rsp, req.url, 'DELETE', req, endure.db);
     }
 
     name = endure.db[resourceName][id].name;
     delete endure.db[resourceName][id];
     save();
 
-    var returnData = main.responseData(id, resourceName, endure.db, "Deleted", API_DIR, [`${resourceName} '${name}' deleted.`]);
+    var returnData = main.responseData(id, resourceName, endure.db, "Deleted", [`${resourceName} '${name}' deleted.`]);
 
     if (req.headers.accept === 'application/json') {
         return main.returnJson(rsp, returnData);
     }
 
     rsp.writeHead(200, {'Content-Type': 'text/html'});
-    rsp.end(main.renderPage(req, null, returnData, endure.db, API_DIR));
+    rsp.end(main.renderPage(req, null, returnData, endure.db));
 };
 
 this.get = function (req, rsp, id) {
     rsp.setHeader('Cache-Control', 'max-age=0,no-cache,no-store,post-check=0,pre-check=0');
     if (id) {
         if (!endure.db[resourceName][id]) {
-            return main.notFound(rsp, req.url, 'GET', req, endure.db, API_DIR);
+            return main.notFound(rsp, req.url, 'GET', req, endure.db);
         }
         if (req.headers.accept === 'application/json') {
             return main.returnJson(rsp, singleData(endure.db, id));
         }
         rsp.writeHead(200, {'Content-Type': 'text/html'});
-        rsp.end(main.renderPage(req, template.single, single(id, req), db, API_DIR));
+        rsp.end(main.renderPage(req, template.single, single(id, req), endure.db));
     } else {
         if (req.headers.accept === 'application/json') {
             return main.returnJson(rsp, listData());
         }
         rsp.writeHead(200, {'Content-Type': 'text/html'});
-        rsp.end(main.renderPage(req, template.list, list(), db, API_DIR));
+        rsp.end(main.renderPage(req, template.list, list(), endure.db));
     }
 };
 
-this.init = function (_endure, _API_DIR) {
+this.init = function (_endure) {
     endure = _endure;
-    API_DIR = _API_DIR;
 };
 
 async function loadData() {
-    template.single = await main.readFile(`${__dirname}/${resourceName}.html.mustache`, 'utf8');
-    template.list = await main.readFile(`${__dirname}/${resourceName}s.html.mustache`, 'utf8');
+    template.single = await fs.readFile(`${__dirname}/${resourceName}.html.mustache`, 'utf8');
+    template.list = await fs.readFile(`${__dirname}/${resourceName}s.html.mustache`, 'utf8');
 }
 
 loadData();
